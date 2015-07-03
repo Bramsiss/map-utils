@@ -1,3 +1,114 @@
+window.mapUtils = {};
+var mapUtils = window.mapUtils;
+mapUtils = {
+    http: {
+        json: function(url, data, callback) {
+            
+            // Must encode data
+            if(data && typeof(data) === 'object') {
+                var y = '', e = encodeURIComponent;
+                for (x in data) {
+                    y += '&' + e(x) + '=' + e(data[x]);
+                }
+                data = y.slice(1);
+            }
+            
+            url += (/\?/.test(url) ? '&' : '?') + data;
+            
+            var xmlHttp = new(XMLHttpRequest || ActiveXObject)('MSXML2.XMLHTTP.3.0');
+            xmlHttp.open("GET", url, true);
+            xmlHttp.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xmlHttp.setRequestHeader("Accept","application/json");
+            xmlHttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+            xmlHttp.onreadystatechange = function () {
+                if (xmlHttp.readyState != 4) return;
+                if (xmlHttp.status != 200 && xmlHttp.status != 304){
+                    callback('');
+                    return;
+                }
+                callback(JSON.parse(xmlHttp.response));
+            };
+            xmlHttp.send(null);
+        }
+    },
+    panTo: function(map, coord, duration){
+        duration = duration || 500;
+        var pan = ol.animation.pan({
+                duration: duration,
+                source: map.getView().getCenter()
+            });
+        
+        map.beforeRender(pan);
+        map.getView().setCenter(coord);
+    },
+    to3857: function(coord){
+        return ol.proj.transform(
+            [parseFloat(coord[0]), parseFloat(coord[1])], 'EPSG:4326', 'EPSG:3857'
+        );
+    },
+    to4326: function(coord){
+        return ol.proj.transform(
+            [parseFloat(coord[0]), parseFloat(coord[1])], 'EPSG:3857', 'EPSG:4326'
+        );
+    },
+    createElement: function(node, html){
+        var frag = document.createDocumentFragment();
+        
+        var elem = document.createElement(node);
+        elem.innerHTML = html;
+        
+        while (elem.childNodes[0]) {
+            frag.appendChild(elem.childNodes[0]);
+        }
+        elem.appendChild(frag);
+        return elem;
+    },
+    htmlEscape: function(str){
+        return String(str).replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    },
+    hasClass: function(element, classname){
+        return element.className.split(/\s/).indexOf(classname) != -1;
+    },
+    addClass: function(element, classname){
+        var 
+            rspaces = /\s+/, c,
+            classNames = (classname || "").split(rspaces),
+            className = " " + element.className + " ",
+            setClass = element.className;
+        
+        for (c = 0; c < classNames.length; c++) {
+            if (className.indexOf(" " + classNames[c] + " ") < 0)
+                setClass += " " + classNames[c];
+        }
+        element.className = setClass.replace(/^\s+|\s+$/g,'');
+    },
+    removeClass: function(element, classname){
+        var
+            rspaces = /\s+/, c, rclass = /[\n\t]/g,
+            classNames = (classname || "").split(rspaces),
+            className = (" " + element.className + " ").replace(rclass, " ");
+        
+        for (c = 0; c < classNames.length; c++) {
+            className = className.replace(" " + classNames[c] + " ", " ");
+        }
+        element.className = className.replace(/^\s+|\s+$/g,'');
+    },
+    /**
+     * Overwrites obj1's values with obj2's and adds obj2's if non existent in obj1
+     * @param obj1
+     * @param obj2
+     * @returns obj3 a new object based on obj1 and obj2
+     */
+    mergeOptions: function(obj1, obj2){
+        var obj3 = {};
+        for (var attrname in obj1) { obj3[attrname] = obj1[attrname]; }
+        for (var attrname in obj2) { obj3[attrname] = obj2[attrname]; }
+        return obj3;
+    }
+};
+
 function $el(id){
     return document.getElementById(id);
 }
